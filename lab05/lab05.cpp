@@ -2,124 +2,113 @@
 #include<stdio.h>
 #include<windows.h>
 #include<conio.h>
+void setcolor(int fg, int bg)
+{
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, bg * 16 + fg);
+}
 void gotoxy(int x, int y)
 {
-	COORD c = { x, y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
-}
-void draw_ship(int x, int y)
-{
-	gotoxy(x, y); printf(" <-0-> ");
+    COORD c = { x, y };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 }
 void setcursor(bool visible)
 {
-	HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_CURSOR_INFO lpCursor;
-	lpCursor.bVisible = visible;
-	lpCursor.dwSize = 20;
-	SetConsoleCursorInfo(console, &lpCursor);
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO lpCursor;
+    lpCursor.bVisible = visible;
+    lpCursor.dwSize = 20;
+    SetConsoleCursorInfo(console, &lpCursor);
 }
-void setcolor(int fg, int bg) {
-	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, bg * 16 + fg);
-}
-void erase_ship(int x, int y)
+void draw_ship(int x, int y)
 {
-	gotoxy(x, y);
-	printf(" ");
+    gotoxy(x, y);
+    setcolor(2, 4);
+    printf("<-0->");
 }
-void clean_line(int y)
+void draw_bullet(int x, int y)
 {
-	gotoxy(0, y);
-	for (int x = 0; x < 80; x++) {
-		printf(" ");
-	}
+    gotoxy(x, y);
+    setcolor(7, 0);
+    printf("|");
 }
-void bullet_ON(int x, int y)
+void del(int a, int b)
 {
-	gotoxy(x, y);
-	printf("o");
+    gotoxy(a, b);
+    setcolor(7, 0);
+    printf("     ");
 }
-void bullet_OFF(int x, int y)
+void delbullet(int a, int b)
 {
-	gotoxy(x, y);
-	printf(" ");
+    gotoxy(a, b);
+    setcolor(7, 0);
+    printf(" ");
 }
 int main()
 {
-	char ch = ' ';
-	int x = 38, y = 20, direction = 0, bullet = 0, bx = 0, by = 0,
-		locy = 0;
-	setcursor(0);
-	draw_ship(x, y);
-	direction = 0;// 0 = not move
-	bullet = 0;// 0 = Bullet OFF
-	do {
-		if (_kbhit()) {
-			ch = _getch();
-			if (ch == 'a') {
-				direction = -1;// -1 = move left
-			}
-			if (ch == 'd') {
-				direction = 1;// 1 = move right
-			}
-			if (ch == 's') {
-				direction = 0;
-			}
-			if (ch == ' ') {
-				setcolor(7, 0);
-				clean_line(locy);
-				bx = x + 3;
-				by = y - 1;
-				bullet = 1;// 1 = Bullet ON
-			}
-			fflush(stdin);
-		}
-		if (direction != 0) {
-			if (direction == -1) {
-				setcolor(7, 0);
-				erase_ship(x, y);
-				setcolor(2, 4);
-				if (x <= 0) draw_ship(0, y);
-				else draw_ship(--x, y);
-			}
-			else if (direction == 1) {
-				setcolor(7, 0);
-				erase_ship(x, y);
-				setcolor(2, 4); if (x >= 80) draw_ship(80, y);
-				else draw_ship(++x, y);
-			}
-		}
-		else if (direction == 0) {
-			setcolor(7, 0);
-			erase_ship(x, y);
-			setcolor(2, 4);
-			draw_ship(x, y);
-		}
-		if (bullet == 1) {
-			setcolor(7, 0);
-			bullet_OFF(bx, by);
-			bullet_OFF(bx + 2, by);
-			bullet_OFF(bx + 4, by);
-			bullet_OFF(bx - 2, by);
-			bullet_OFF(bx - 4, by);
-			setcolor(11, 0);
-			if (by > 0) {
-				bullet_ON(bx, --by);
-				bullet_ON(bx + 2, by);
-				bullet_ON(bx + 4, by);
-				bullet_ON(bx - 2, by);
-				bullet_ON(bx - 4, by);
-				locy = by;
-			}
-			else {
-				clean_line(by);
-				locy = 0;
-				bullet = 0;
-			}
-		}
-		Sleep(100);
-	} while (ch != 'x');
-	setcolor(7, 0);
-	return 0;
+    char ch = '.';
+    int x = 38, y = 20;
+    int walk = 0; //0 = no walk
+    int bullet[5] = { 0 };
+    int keep = 0;
+    int i[5], o[5];
+    int check = 0;
+
+    setcursor(0);
+    draw_ship(x, y);
+
+    do {
+        if (_kbhit()) {
+            ch = _getch();
+            if (ch == 'a')
+            {
+                walk = 1;
+            }
+            if (ch == 'd')
+            {
+                walk = 2;
+            }
+            if (ch == 's')
+            {
+                walk = 0;
+            }
+            if (ch == ' ' && check < 5)
+            {
+                bullet[keep % 5] = 1;
+                i[keep % 5] = x + 2;
+                o[keep % 5] = y - 1;
+                check++;
+                keep++;
+            }
+        }
+        if (walk == 1 && x > 0)
+        {
+            del(x, y);
+            draw_ship(--x, y);
+        }
+        if (walk == 2 && x < 75)
+        {
+            del(x, y);
+            draw_ship(++x, y);
+        }
+        for (int a = 0; a < 5; a++)
+        {
+            if (bullet[a] == 1)
+            {
+                delbullet(i[a], o[a]);
+                if (o[a] == 0)
+                {
+                    bullet[a] = 0;
+                    check--;
+                }
+                if (o[a] > 0)
+                {
+                    draw_bullet(i[a], --(o[a]));
+                }
+            }
+        }
+        fflush(stdin);
+        Sleep(100);
+    } while (ch != 'x');
+    return 0;
 }
